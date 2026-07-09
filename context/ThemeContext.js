@@ -1,12 +1,42 @@
-import React, { createContext, useState } from "react";
+import React, {
+  createContext,
+  useEffect,
+  useState,
+} from "react";
+
+import { getData, saveData } from "../storage/storage";
 
 export const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
+export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
+  useEffect(() => {
+    loadTheme();
+  }, []);
+
+  const loadTheme = async () => {
+    try {
+      const savedTheme = await getData("isDarkTheme");
+
+      if (savedTheme !== null) {
+        setIsDark(savedTheme);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const toggleTheme = async () => {
+    try {
+      const newTheme = !isDark;
+
+      setIsDark(newTheme);
+
+      await saveData("isDarkTheme", newTheme);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -19,4 +49,6 @@ export function ThemeProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   );
-}
+};
+
+export default ThemeProvider;

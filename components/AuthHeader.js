@@ -1,13 +1,14 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+} from "react-native";
 
-import Colors from "../styles/colors";
 import { ThemeContext } from "../context/ThemeContext";
+import Colors from "../styles/colors";
 
-export default function Header({
-  title,
-  subtitle,
-}) {
+const AuthHeader = ({ title, subtitle }) => {
   const { isDark } = useContext(ThemeContext);
 
   return (
@@ -17,45 +18,45 @@ export default function Header({
           styles.title,
           {
             color: isDark
-              ? "#FFFFFF"
-              : Colors.primary,
+              ? Colors.white
+              : Colors.text,
           },
         ]}
       >
         {title}
       </Text>
 
-      {subtitle ? (
-        <Text
-          style={[
-            styles.subtitle,
-            {
-              color: isDark
-                ? "#CFCFCF"
-                : Colors.gray,
-            },
-          ]}
-        >
-          {subtitle}
-        </Text>
-      ) : null}
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            color: isDark
+              ? "#BBBBBB"
+              : Colors.lightText,
+          },
+        ]}
+      >
+        {subtitle}
+      </Text>
     </View>
   );
-}
+};
+
+export default AuthHeader;
 
 const styles = StyleSheet.create({
   container: {
     marginBottom: 30,
-    marginTop: 30,
   },
 
   title: {
     fontSize: 30,
-    fontWeight: "700",
+    fontWeight: "bold",
   },
 
   subtitle: {
     marginTop: 8,
     fontSize: 16,
+    lineHeight: 22,
   },
 });

@@ -1,69 +1,93 @@
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import React, { useContext } from "react";
+import {
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+} from "react-native";
+
+import { ThemeContext } from "../context/ThemeContext";
 import Colors from "../styles/colors";
 
-const categories = [
-  "All",
-  "Food",
-  "Transport",
-  "Bills",
-  "Entertainment",
-];
-
-export default function CategoryFilter({
-  selected,
+const CategoryFilter = ({
+  categories,
+  selectedCategory,
   onSelect,
-}) {
+}) => {
+  const { isDark } = useContext(ThemeContext);
+
   return (
-    <View style={styles.container}>
-      {categories.map((category) => (
-        <TouchableOpacity
-          key={category}
-          style={[
-            styles.button,
-            selected === category && styles.active,
-          ]}
-          onPress={() => onSelect(category)}
-        >
-          <Text
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      {categories.map((item) => {
+        const selected = item === selectedCategory;
+
+        return (
+          <TouchableOpacity
+            key={item}
             style={[
-              styles.text,
-              selected === category && styles.activeText,
+              styles.button,
+              {
+                backgroundColor: selected
+                  ? "#4F46E5"
+                  : isDark
+                  ? Colors.darkCard
+                  : "#FFFFFF",
+              },
             ]}
+            onPress={() => onSelect(item)}
           >
-            {category}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: selected
+                    ? "#FFFFFF"
+                    : isDark
+                    ? "#FFFFFF"
+                    : "#000000",
+                },
+              ]}
+            >
+              {item}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
-}
+};
+
+export default CategoryFilter;
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 15,
-  },
-
+  paddingHorizontal: 15,
+  paddingVertical: 8,
+  alignItems: "center",
+},
   button: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-    marginRight: 8,
-    marginBottom: 8,
-  },
+  height: 42,
+  minWidth: 70,
 
-  active: {
-    backgroundColor: Colors.primary,
-  },
+  paddingHorizontal: 20,
+
+  borderRadius: 21,
+
+  marginRight: 10,
+
+  justifyContent: "center",
+  alignItems: "center",
+
+  elevation: 2,
+},
 
   text: {
-    color: "#333",
-  },
-
-  activeText: {
-    color: "#fff",
+    fontSize: 15,
     fontWeight: "600",
+    textAlign: "center",
   },
 });

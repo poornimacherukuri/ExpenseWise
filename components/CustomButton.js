@@ -1,25 +1,56 @@
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import React from "react";
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+
 import Colors from "../styles/colors";
 
 export default function CustomButton({
   title,
   onPress,
-  backgroundColor = Colors.primary,
+  loading = false,
   disabled = false,
+  backgroundColor = Colors.primary,
+  textColor = Colors.white,
+  style,
 }) {
   return (
     <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      disabled={disabled || loading}
       style={[
         styles.button,
         {
-          backgroundColor: disabled ? Colors.border : backgroundColor,
+          backgroundColor:
+            disabled
+              ? "#BDBDBD"
+              : backgroundColor,
         },
+        style,
       ]}
-      onPress={onPress}
-      activeOpacity={0.8}
-      disabled={disabled}
     >
-      <Text style={styles.text}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={Colors.white}
+        />
+      ) : (
+        <Text
+          style={[
+            styles.text,
+            {
+              color: textColor,
+            },
+          ]}
+        >
+          {title}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -27,16 +58,38 @@ export default function CustomButton({
 const styles = StyleSheet.create({
   button: {
     width: "100%",
-    height: 55,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
+
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 15,
+
+    marginTop: 20,
+
+    shadowColor: "#16A34A",
+
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+
+    shadowOpacity: 0.18,
+
+    shadowRadius: 12,
+
+    elevation: 6,
+
+    ...(Platform.OS === "web"
+      ? {
+          cursor: "pointer",
+          transitionDuration: "150ms",
+        }
+      : {}),
   },
 
   text: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.4,
   },
 });

@@ -1,342 +1,571 @@
-import React, { useContext, useState } from "react";
+import React, {
+  useContext,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
+
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
-  ScrollView,
   FlatList,
+  SafeAreaView,
+  StatusBar,
+  TouchableOpacity,
   Alert,
-  Platform,
 } from "react-native";
 
-import Header from "../../components/Header";
+import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+
+import HomeHeader from "../../components/HomeHeader";
 import ExpenseCard from "../../components/ExpenseCard";
-import CustomButton from "../../components/CustomButton";
 import SearchBar from "../../components/SearchBar";
 import CategoryFilter from "../../components/CategoryFilter";
-
-import Colors from "../../styles/colors";
-import routes from "../../constants/routes";
 
 import { ExpenseContext } from "../../context/ExpenseContext";
 import { ThemeContext } from "../../context/ThemeContext";
 
-export default function HomeScreen({ navigation }) {
-  const { expenses, deleteExpense, updateExpense } =
-    useContext(ExpenseContext);
+import { getCurrentUser } from "../../services/authService";
 
+import Colors from "../../styles/colors";
+import routes from "../../constants/routes";
+
+const HomeScreen = ({ navigation }) => {
+  const { expenses } = useContext(ExpenseContext);
   const { isDark } = useContext(ThemeContext);
 
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState("All");
 
-  const filteredExpenses = expenses.filter((item) => {
-    const matchSearch = item.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  // Hidden by default
+  const [showBalance, setShowBalance] =
+    useState(false);
 
-    const matchCategory =
-      category === "All" ||
-      item.category === category;
+  const [monthlyIncome, setMonthlyIncome] =
+    useState(0);
 
-    return matchSearch && matchCategory;
-  });
+  const categories = [
+    "All",
+    "Food",
+    "Travel",
+    "Shopping",
+    "Bills",
+    "Salary",
+    "Health",
+    "Others",
+  ];
 
-  const totalExpense = expenses.reduce(
-    (total, item) => total + Number(item.amount),
-    0
+  const loadUserIncome = useCallback(async () => {
+    const user = await getCurrentUser();
+
+    if (!user) return;
+
+    const income =
+      Number(user.income) || 0;
+
+    setMonthlyIncome(income);
+
+    // First time user
+    if (income === 0 && expenses.length === 0) {
+      Alert.alert(
+        "Welcome 👋",
+        "Please set your monthly income before using ExpenseWise.",
+        [
+          {
+            text: "Set Income",
+            onPress: () =>
+              navigation.navigate(
+                routes.PROFILE
+              ),
+          },
+        ]
+      );
+    }
+  }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserIncome();
+    }, [loadUserIncome])
   );
 
-  // Demo income
-  const totalIncome = 40000;
-  const totalBalance = totalIncome - totalExpense;
+  const totalIncome = useMemo(() => {
+    return expenses
+      .filter(
+        (item) => item.type === "Income"
+      )
+      .reduce(
+        (sum, item) =>
+          sum + Number(item.amount),
+        0
+      );
+  }, [expenses]);
+
+  const totalExpense = useMemo(() => {
+    return expenses
+      .filter(
+        (item) =>
+          item.type === "Expense"
+      )
+      .reduce(
+        (sum, item) =>
+          sum + Number(item.amount),
+        0
+      );
+  }, [expenses]);
+
+  // Actual balance
+  const totalBalance = useMemo(() => {
+    return (
+      monthlyIncome +
+      totalIncome -
+      totalExpense
+    );
+  }, [
+    monthlyIncome,
+    totalIncome,
+    totalExpense,
+  ]);
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((item) => {
+      const matchesCategory =
+        selectedCategory === "All" ||
+        item.category ===
+          selectedCategory;
+
+      const matchesSearch =
+        item.title
+          .toLowerCase()
+          .includes(
+            searchText.toLowerCase()
+          );
+
+      return (
+        matchesCategory &&
+        matchesSearch
+      );
+    });
+  }, [
+    expenses,
+    searchText,
+    selectedCategory,
+  ]);
 
   return (
     <SafeAreaView
+  style={[
+    styles.container,
+    {
+      backgroundColor: isDark
+        ? Colors.darkBackground
+        : Colors.background,
+    },
+  ]}
+>
+  <StatusBar
+    barStyle={
+      isDark
+        ? "light-content"
+        : "dark-content"
+    }
+  />
+
+  <HomeHeader title="ExpenseWise" />
+
+  <View style={styles.balanceCard}>
+    <View style={styles.balanceHeader}>
+      <Text style={styles.balanceTitle}>
+        Total Balance
+      </Text>
+
+      <TouchableOpacity
+        onPress={() =>
+          setShowBalance(!showBalance)
+        }
+      >
+        <Ionicons
+          name={
+            showBalance
+              ? "eye-outline"
+              : "eye-off-outline"
+          }
+          size={24}
+          color="#FFFFFF"
+        />
+      </TouchableOpacity>
+    </View>
+
+    <Text style={styles.balanceAmount}>
+      {monthlyIncome === 0
+        ? "Not Set"
+        : showBalance
+        ? `₹ ${totalBalance}`
+        : "••••••"}
+    </Text>
+
+    <View style={styles.summaryContainer}>
+      <View style={styles.summaryBox}>
+        <Text style={styles.summaryLabel}>
+          Monthly{"\n"}Income
+        </Text>
+
+        <Text style={styles.income}>
+          {monthlyIncome === 0
+            ? "Not Set"
+            : showBalance
+            ? `₹ ${monthlyIncome}`
+            : "••••••"}
+        </Text>
+      </View>
+
+      <View style={styles.summaryBox}>
+        <Text style={styles.summaryLabel}>
+          Income{"\n"}Received
+        </Text>
+
+        <Text style={styles.income}>
+          {monthlyIncome === 0
+            ? "--"
+            : showBalance
+            ? `₹ ${totalIncome}`
+            : "••••••"}
+        </Text>
+      </View>
+
+      <View style={styles.summaryBox}>
+        <Text style={styles.summaryLabel}>
+          Total{"\n"}Expense
+        </Text>
+
+        <Text style={styles.expense}>
+          {monthlyIncome === 0
+            ? "--"
+            : showBalance
+            ? `₹ ${totalExpense}`
+            : "••••••"}
+        </Text>
+      </View>
+    </View>
+  </View>
+
+  
+  <View style={styles.filterSection}>
+  <SearchBar
+    value={searchText}
+    onChangeText={setSearchText}
+  />
+
+  <CategoryFilter
+    categories={categories}
+    selectedCategory={selectedCategory}
+    onSelect={setSelectedCategory}
+  />
+</View>
+
+{monthlyIncome > 0 ? (
+  <>
+
+    <Text
       style={[
-        styles.safeArea,
+        styles.recentTitle,
         {
-          backgroundColor: isDark
-            ? "#121212"
-            : Colors.background,
+          color: isDark
+            ? Colors.white
+            : Colors.textPrimary,
         },
       ]}
     >
-      <ScrollView
-        style={[
-          styles.container,
-          {
-            backgroundColor: isDark
-              ? "#121212"
-              : Colors.background,
-          },
-        ]}
-        contentContainerStyle={{
-          paddingBottom: 100,
-        }}
-      >
-        <Header
-          title="ExpenseWise"
-          subtitle="Track your daily expenses"
-        />
+      Recent Transactions
+    </Text>
 
-        <Text
-          style={[
-            styles.greeting,
-            {
-              color: isDark
-                ? "#FFFFFF"
-                : Colors.gray,
-            },
-          ]}
-        >
-          Welcome Back 👋
-        </Text>
-
-        <View style={styles.balanceCard}>
-          <Text style={styles.label}>
-            Total Balance
-          </Text>
-
-          <Text style={styles.balance}>
-            ₹{totalBalance.toLocaleString()}
-          </Text>
-        </View>
-
-        <Text
-          style={[
-            styles.total,
-            {
-              color: isDark
-                ? "#FFFFFF"
-                : Colors.gray,
-            },
-          ]}
-        >
-          Total Transactions : {expenses.length}
-        </Text>
-
-        <View style={styles.row}>
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: isDark
-                  ? "#1E1E1E"
-                  : "#FFFFFF",
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>
-              Income
-            </Text>
-
-            <Text style={styles.income}>
-              ₹{totalIncome.toLocaleString()}
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: isDark
-                  ? "#1E1E1E"
-                  : "#FFFFFF",
-              },
-            ]}
-          >
-            <Text style={styles.cardTitle}>
-              Expense
-            </Text>
-
-            <Text style={styles.expense}>
-              ₹{totalExpense.toLocaleString()}
-            </Text>
-          </View>
-        </View>
-
-        <Text
-          style={[
-            styles.section,
-            {
-              color: isDark
-                ? "#FFFFFF"
-                : Colors.text,
-            },
-          ]}
-        >
-          Recent Expenses
-        </Text>
-
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        <CategoryFilter
-          selected={category}
-          onSelect={setCategory}
-        />
-
-        <FlatList
-          data={filteredExpenses}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          renderItem={({ item }) => (
-            <ExpenseCard
-              item={item}
-              onDelete={(id) => {
-                if (Platform.OS === "web") {
-                  const confirmed = window.confirm(
-                    "Are you sure you want to delete this expense?"
-                  );
-
-                  if (confirmed) {
-                    deleteExpense(id);
-                  }
-                } else {
-                  Alert.alert(
-                    "Delete Expense",
-                    "Are you sure you want to delete this expense?",
-                    [
-                      {
-                        text: "Cancel",
-                        style: "cancel",
-                      },
-                      {
-                        text: "Delete",
-                        style: "destructive",
-                        onPress: () => deleteExpense(id),
-                      },
-                    ]
-                  );
-                }
-              }}
-              onEdit={(expense) =>
-                navigation.navigate(
-                  routes.EDIT_EXPENSE,
-                  {
-                    expense,
-                    updateExpense,
-                  }
-                )
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <Text
-              style={[
-                styles.empty,
-                {
-                  color: isDark
-                    ? "#FFFFFF"
-                    : Colors.gray,
-                },
-              ]}
-            >
-              No expenses found.
-              {"\n"}
-              Tap "Add Expense" to create one.
-            </Text>
-          }
-        />
-
-        <CustomButton
-          title="Add Expense"
-          onPress={() =>
-            navigation.navigate(routes.ADD_EXPENSE)
-          }
-        />
-      </ScrollView>
-    </SafeAreaView>
-  );
+    <FlatList
+      data={filteredExpenses}
+      keyExtractor={(item) => item.id.toString()}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={
+  filteredExpenses.length === 0
+    ? styles.emptyContainer
+    : styles.listContainer
 }
+      renderItem={({ item }) => (
+        <ExpenseCard
+          expense={item}
+          navigation={navigation}
+        />
+      )}
+      ListEmptyComponent={
+        <View style={styles.emptyView}>
+          <Text
+            style={[
+              styles.emptyTitle,
+              {
+                color: isDark
+                  ? Colors.white
+                  : Colors.textPrimary,
+              },
+            ]}
+          >
+            No Transactions Yet
+          </Text>
 
+          <Text
+            style={[
+              styles.emptySubtitle,
+              {
+                color: isDark
+                  ? "#BDBDBD"
+                  : "#666666",
+              },
+            ]}
+          >
+            Tap the + button to add your first transaction.
+          </Text>
+        </View>
+      }
+    />
+  </>
+) : (
+  <View
+    style={[
+      styles.welcomeCard,
+      {
+        backgroundColor: isDark
+          ? Colors.darkCard
+          : Colors.white,
+      },
+    ]}
+  >
+    <Text
+      style={[
+        styles.welcomeTitle,
+        {
+          color: isDark
+            ? Colors.white
+            : Colors.textPrimary,
+        },
+      ]}
+    >
+      👋 Welcome to ExpenseWise
+    </Text>
+
+    <Text
+      style={[
+        styles.welcomeSubtitle,
+        {
+          color: isDark
+            ? "#BDBDBD"
+            : "#666666",
+        },
+      ]}
+    >
+      Before you start tracking your finances,
+      please set your monthly income from the
+      Profile screen.
+    </Text>
+
+    <TouchableOpacity
+      style={styles.setIncomeButton}
+      onPress={() =>
+        navigation.navigate(routes.PROFILE)
+      }
+    >
+      <Text style={styles.setIncomeText}>
+        Set Monthly Income
+      </Text>
+    </TouchableOpacity>
+  </View>
+)}
+
+<TouchableOpacity
+  style={styles.fab}
+  activeOpacity={0.8}
+  onPress={() => {
+    if (monthlyIncome === 0) {
+      Alert.alert(
+        "Monthly Income Required",
+        "Please set your monthly income from the Profile page first."
+      );
+      return;
+    }
+
+    navigation.navigate(routes.ADD_EXPENSE);
+  }}
+>
+  <Text style={styles.fabText}>＋</Text>
+</TouchableOpacity>
+
+</SafeAreaView>
+);
+};
+
+export default HomeScreen;
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
   container: {
     flex: 1,
-    padding: 20,
-  },
-
-  greeting: {
-    fontSize: 18,
-    marginBottom: 10,
-    fontWeight: "600",
   },
 
   balanceCard: {
+    margin: 15,
+    padding: 20,
+    borderRadius: 18,
     backgroundColor: Colors.primary,
-    borderRadius: 20,
-    padding: 25,
+    elevation: 5,
+  },
+
+  balanceHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  balanceTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+
+  balanceAmount: {
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontWeight: "700",
     marginTop: 10,
   },
 
-  label: {
-    color: "#FFFFFF",
-    fontSize: 16,
-  },
-
-  balance: {
-    color: "#FFFFFF",
-    fontSize: 34,
-    fontWeight: "bold",
-    marginTop: 8,
-  },
-
-  total: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 15,
-    marginBottom: 15,
-  },
-
-  row: {
+  summaryContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 25,
+    marginTop: 22,
   },
 
-  card: {
-    width: "48%",
-    padding: 20,
-    borderRadius: 16,
-    elevation: 2,
+  summaryBox: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 4,
   },
 
-  cardTitle: {
-    fontSize: 15,
-    color: Colors.gray,
+  summaryLabel: {
+    color: "#DDDDDD",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
   income: {
-    color: "green",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginTop: 8,
+    color: "#4ADE80",
+    fontWeight: "700",
+    fontSize: 18,
+    marginTop: 6,
+    textAlign: "center",
   },
+
+  filterSection: {
+  paddingBottom: 12,
+  backgroundColor: "transparent",
+},
 
   expense: {
-    color: "red",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginTop: 8,
+    color: "#F87171",
+    fontWeight: "700",
+    fontSize: 18,
+    marginTop: 6,
+    textAlign: "center",
   },
 
-  section: {
+  recentTitle: {
     fontSize: 22,
     fontWeight: "700",
+    marginHorizontal: 18,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+
+  listContainer: {
+  paddingHorizontal: 15,
+  paddingBottom: 100,
+  flexGrow: 0,
+},
+
+  emptyContainer: {
+  paddingTop: 60,
+  paddingBottom: 80,
+},
+
+  emptyView: {
+  alignItems: "center",
+  justifyContent: "center",
+  paddingHorizontal: 25,
+  paddingVertical: 60,
+},
+
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+
+  emptySubtitle: {
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 22,
+    color: "#666666",
+  },
+
+  fab: {
+    position: "absolute",
+    right: 25,
+    bottom: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 10,
+  },
+
+  fabText: {
+    color: "#FFFFFF",
+    fontSize: 34,
+    marginTop: -2,
+  },
+
+  welcomeCard: {
+    marginHorizontal: 20,
+    marginTop: 30,
+    padding: 25,
+    borderRadius: 18,
+    elevation: 4,
+    alignItems: "center",
+  },
+
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    textAlign: "center",
     marginBottom: 15,
   },
 
-  empty: {
+  welcomeSubtitle: {
+    fontSize: 15,
     textAlign: "center",
-    marginTop: 40,
+    lineHeight: 24,
+    marginBottom: 25,
+  },
+
+  setIncomeButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    elevation: 3,
+  },
+
+  setIncomeText: {
+    color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "700",
   },
 });

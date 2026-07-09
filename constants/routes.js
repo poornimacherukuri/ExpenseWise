@@ -9,4 +9,7 @@ export default {
   ABOUT: "About",
   ADD_EXPENSE: "AddExpense",
   EDIT_EXPENSE: "EditExpense",
+  CHANGE_PASSWORD: "ChangePassword",
+  FORGOT_PASSWORD: "ForgotPassword",
+  EDIT_PROFILE: "EditProfile",
 };

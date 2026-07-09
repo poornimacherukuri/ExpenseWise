@@ -7,7 +7,9 @@ import HomeScreen from "../screens/Home/HomeScreen";
 import AddExpenseScreen from "../screens/Home/AddExpenseScreen";
 import BottomTabs from "./BottomTabs";
 import EditExpenseScreen from "../screens/Home/EditExpenseScreen";
-
+import ChangePasswordScreen from "../screens/Profile/ChangePasswordScreen";
+import ForgotPasswordScreen from "../screens/Auth/ForgotPasswordScreen";
+import EditProfileScreen from "../screens/Profile/EditProfileScreen";
 const Stack = createNativeStackNavigator();
 
 export default function AuthStack() {
@@ -27,7 +29,14 @@ export default function AuthStack() {
         name="Login"
         component={LoginScreen}
       />
-
+      <Stack.Screen
+  name="ForgotPassword"
+  component={ForgotPasswordScreen}
+/>
+<Stack.Screen
+  name="EditProfile"
+  component={EditProfileScreen}
+/>
       <Stack.Screen
         name="Register"
         component={RegisterScreen}
@@ -41,6 +50,10 @@ export default function AuthStack() {
       <Stack.Screen
   name="AddExpense"
   component={AddExpenseScreen}
+/>
+<Stack.Screen
+  name="ChangePassword"
+  component={ChangePasswordScreen}
 />
       <Stack.Screen
         name="EditExpense"

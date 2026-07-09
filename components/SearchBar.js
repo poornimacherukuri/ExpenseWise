@@ -1,33 +1,69 @@
-import { View, TextInput, StyleSheet } from "react-native";
+import React, { useContext } from "react";
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Text,
+} from "react-native";
+
+import { ThemeContext } from "../context/ThemeContext";
 import Colors from "../styles/colors";
 
-export default function SearchBar({
-  value,
-  onChangeText,
-}) {
+const SearchBar = ({ value, onChangeText }) => {
+  const { isDark } = useContext(ThemeContext);
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark
+            ? Colors.darkCard
+            : "#FFFFFF",
+        },
+      ]}
+    >
+      <Text style={styles.icon}>🔍</Text>
+
       <TextInput
+        style={[
+          styles.input,
+          {
+            color: isDark ? "#FFFFFF" : "#000000",
+          },
+        ]}
         placeholder="Search expenses..."
+        placeholderTextColor={
+          isDark ? "#BDBDBD" : "#888888"
+        }
         value={value}
         onChangeText={onChangeText}
-        style={styles.input}
       />
     </View>
   );
-}
+};
+
+export default SearchBar;
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 15,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    borderRadius: 12,
+    elevation: 2,
+    height: 50,
+  },
+
+  icon: {
+    fontSize: 18,
+    marginRight: 10,
   },
 
   input: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 50,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    flex: 1,
+    fontSize: 16,
   },
 });
